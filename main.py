@@ -1,46 +1,39 @@
 from flask import Flask, request, jsonify
-import os
 from datetime import datetime
+import os
 
 app = Flask(__name__)
 
 #BUS DE EVENTOS
-#___________________________________
-
+#_________________________________________
 def publicar_evento(nombre_evento, data):
-    print (f"\n Evento publicado: {nombre_evento}")
+    print(f"\n Evento publicado:{nombre_evento}")
 
-    if nombre_evento == "Factura_vencida":
+    if nombre_evento == "factura_vencida":
         notificar_cliente(data)
         registrar_evento(data)
         log_evento(data)
 
-#REACCIOES DE LOS CONSUMIDORES
+#REACCIONES DE LOS CONSUMIDORES
+#__________________________________________
 def notificar_cliente(data):
-    print(f"Notificando cliente {data['cliente_id']} - factura vencida ({data['dias_mora']} dias)")
-
+    print(f"Notificando Cliente {data['cliente_id']} - factura vencida ({data['dias_mora']} días)")
 
 def registrar_evento(data):
-    print(f"Registrando en la base de datos del sistema: cliente {data['cliente_id']} con mora")
-
+    print(f"REgistrando en la BD del Sistema: cliente {data['cliente_id']} con mora")
 
 def log_evento(data):
     print(f" LOG: Evento procesado correctamente")
 
-
-#RUTA BASE 
-#___________________
-
+#RUTA BASE
+#___________________________________________
 @app.route("/")
 def home():
-    return "API AquaSucre funcionando..."
+    return "API AquaSucre funcionando...."
 
-
-#ENDPOINT PRINCIPAL 
-#_____________________
-
-@app.route("/facturas", methodos=["POST"])
-
+#ENDPOINT PRINCIPAL
+#___________________________________________
+@app.route("/facturas", methods=["POST"])
 def crear_factura():
     data = request.get_json()
 
@@ -48,26 +41,24 @@ def crear_factura():
     valor = data.get("valor")
     fecha_vencimiento = data.get("fecha_vencimiento")
 
-    #Validacion basica de formato Json
+    #validación básica
     if not cliente_id or not valor or not fecha_vencimiento:
         return jsonify({"error": "Datos incompletos"}), 400
     
     try:
         fecha_venc = datetime.strptime(fecha_vencimiento, "%Y-%m-%d")
     except ValueError:
-      return jsonify({"error": "Formato de fecha inválido, utiliza YYY-mm-DD"}), 400  
-    
+        return jsonify({"error": "Formato de fecha inválido. Utiliza YYYY-mm-DD"}), 400
+
     hoy = datetime.now()
 
     print(f"\n Factura recibida para cliente {cliente_id}")
 
-    #LÓGICA DE NEGOCIO
-    #_____________________________
+    #LOGICA DE NEGOCIO
 
     if hoy > fecha_venc:
         dias_mora = (hoy - fecha_venc).days
 
-        #Configuramos evento una vez se valide que la factura vencio
         evento = {
             "cliente_id": cliente_id,
             "valor": valor,
@@ -78,23 +69,18 @@ def crear_factura():
         publicar_evento("factura_vencida", evento)
 
         return jsonify({
-            "mensaje": "Factura vencida detectada", 
-            "evento": "factura_vencida", 
+            "mensaje": "Factura vencida detectada",
+            "evento": "factura_vencida",
             "dias_mora": dias_mora
         })
     
-    else: 
+    else:
         return jsonify({
-            "mensaje": "Factura registrada SIN mora"
+            "mensaje": "Factura registrada sin mora"
         })
-    
-#EJECUCIÓN PARA RENDER
-#____________________________-
 
+# EJECUCIÓN PARA RENDER
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port) 
-
-
-
+    app.run(host="0.0.0.0", port=port)
 
