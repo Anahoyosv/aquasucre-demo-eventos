@@ -1,0 +1,7 @@
+service:
+  - type: web
+    name: aquasucre-demo-eventos
+    env: python 
+    buildComand: pip install -r requirements.txt
+    startComands: python main.py
+    
